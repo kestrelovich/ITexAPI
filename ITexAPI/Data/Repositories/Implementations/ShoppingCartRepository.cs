@@ -61,5 +61,6 @@ namespace ITexAPI.Data.Repositories.Implementations
                 .Where(ci => ci.UserId == userId)
                 .SumAsync(ci => ci.Quantity);
         }
+
     }
 }

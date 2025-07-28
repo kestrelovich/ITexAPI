@@ -1,11 +1,12 @@
+using FluentValidation;
+using ITexAPI.Data;
+using ITexAPI.Extensions;
+using ITexAPI.Models.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using FluentValidation;
-using ITexAPI.Data;
-using ITexAPI.Models.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,7 @@ builder.Services.AddControllers();
 // Database
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddApplicationServices();
 
 // Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>

@@ -64,5 +64,43 @@ namespace ITexAPI.Data.Repositories.Implementations
 
             return true;
         }
+
+        public async Task<IEnumerable<Category>> GetAllWithChildrenAsync()
+        {
+            return await _dbSet
+                .Include(c => c.Children.Where(child => child.IsActive))
+                .Include(c => c.Parent)
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
+
+        public async Task<Category?> GetByIdWithChildrenAsync(int id)
+        {
+            return await _dbSet
+                .Include(c => c.Children.Where(child => child.IsActive))
+                .Include(c => c.Parent)
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<Category?> GetByIdWithParentAsync(int id)
+        {
+            return await _dbSet
+                .Include(c => c.Parent)
+                .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<IEnumerable<Category>> GetByParentIdAsync(int? parentId)
+        {
+            return await _dbSet
+                .Where(c => c.ParentId == parentId && c.IsActive)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
+
+        public async Task<bool> HasProductsAsync(int categoryId)
+        {
+            return await _context.Products.AnyAsync(p => p.CategoryId == categoryId && p.IsActive);
+        }
     }
 }

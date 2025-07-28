@@ -31,8 +31,6 @@
     <Folder Include="Models\Requests\" />
     <Folder Include="Helpers\" />
     <Folder Include="Middlewares\" />
-    <Folder Include="Services\Interfaces\" />
-    <Folder Include="Services\Implementations\" />
   </ItemGroup>
 
 </Project>

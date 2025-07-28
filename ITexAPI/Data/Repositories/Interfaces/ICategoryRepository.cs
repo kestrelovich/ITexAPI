@@ -9,5 +9,10 @@ namespace ITexAPI.Data.Repositories.Interfaces
         Task<Category?> GetCategoryWithChildrenAsync(int id);
         Task<bool> HasChildrenAsync(int categoryId);
         Task<bool> IsValidParentAsync(int categoryId, int? parentId);
+        Task<IEnumerable<Category>> GetAllWithChildrenAsync();
+        Task<Category?> GetByIdWithChildrenAsync(int id);
+        Task<Category?> GetByIdWithParentAsync(int id);
+        Task<IEnumerable<Category>> GetByParentIdAsync(int? parentId);
+        Task<bool> HasProductsAsync(int categoryId);
     }
 }
