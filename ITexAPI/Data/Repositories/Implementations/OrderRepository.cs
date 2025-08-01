@@ -54,9 +54,9 @@ namespace ITexAPI.Data.Repositories.Implementations
 
             if (!string.IsNullOrEmpty(paginationParams.SearchTerm))
             {
-                query = query.Where(o => o.User.FirstName.Contains(paginationParams.SearchTerm) ||
-                                        o.User.LastName.Contains(paginationParams.SearchTerm) ||
-                                        o.User.Email.Contains(paginationParams.SearchTerm) ||
+                query = query.Where(o => o.User.FirstName!.Contains(paginationParams.SearchTerm) ||
+                                        o.User.LastName!.Contains(paginationParams.SearchTerm) ||
+                                        o.User.Email!.Contains(paginationParams.SearchTerm) ||
                                         o.ShippingAddress.Contains(paginationParams.SearchTerm));
             }
 

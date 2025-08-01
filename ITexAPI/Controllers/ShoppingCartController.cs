@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using ITexAPI.Models.DTOs;
+using ITexAPI.Models.DTOs.Common;
 using ITexAPI.Services.Interfaces;
+using ITexAPI.Exceptions;
+using System.Security.Claims;
 
 namespace ITexAPI.Controllers
 {
@@ -17,42 +20,51 @@ namespace ITexAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<ShoppingCartDto>> Get()
+        public async Task<ActionResult<ApiResponse<ShoppingCartDto>>> Get()
         {
-            var userId = int.Parse(User.FindFirst("sub")?.Value ?? throw new Exception("No user id claim"));
-            return Ok(await _cartService.GetCartByUserIdAsync(userId));
+            var userId = GetCurrentUserId();
+            var cart = await _cartService.GetCartByUserIdAsync(userId);
+            return Ok(ApiResponse<ShoppingCartDto>.SuccessResponse(cart));
         }
 
         [HttpPost("add")]
-        public async Task<ActionResult> AddToCart([FromBody] AddToCartDto dto)
+        public async Task<ActionResult<ApiResponse<object>>> AddToCart([FromBody] AddToCartDto dto)
         {
-            var userId = int.Parse(User.FindFirst("sub")?.Value ?? throw new Exception("No user id claim"));
+            var userId = GetCurrentUserId();
             await _cartService.AddToCartAsync(userId, dto);
-            return NoContent();
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Item added to cart successfully"));
         }
 
         [HttpPut("{productId}")]
-        public async Task<ActionResult> UpdateCartItem(int productId, [FromBody] UpdateCartItemDto dto)
+        public async Task<ActionResult<ApiResponse<object>>> UpdateCartItem(int productId, [FromBody] UpdateCartItemDto dto)
         {
-            var userId = int.Parse(User.FindFirst("sub")?.Value ?? throw new Exception("No user id claim"));
+            var userId = GetCurrentUserId();
             await _cartService.UpdateCartItemAsync(userId, productId, dto);
-            return NoContent();
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Cart updated successfully"));
         }
 
         [HttpDelete("{productId}")]
-        public async Task<ActionResult> RemoveFromCart(int productId)
+        public async Task<ActionResult<ApiResponse<object>>> RemoveFromCart(int productId)
         {
-            var userId = int.Parse(User.FindFirst("sub")?.Value ?? throw new Exception("No user id claim"));
+            var userId = GetCurrentUserId();
             await _cartService.RemoveFromCartAsync(userId, productId);
-            return NoContent();
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Item removed from cart"));
         }
 
         [HttpDelete("clear")]
-        public async Task<ActionResult> ClearCart()
+        public async Task<ActionResult<ApiResponse<object>>> ClearCart()
         {
-            var userId = int.Parse(User.FindFirst("sub")?.Value ?? throw new Exception("No user id claim"));
+            var userId = GetCurrentUserId();
             await _cartService.ClearCartAsync(userId);
-            return NoContent();
+            return Ok(ApiResponse<object>.SuccessResponse(null!, "Cart cleared"));
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+                throw new ValidationException("User ID not found in token");
+            return userId;
         }
     }
 }

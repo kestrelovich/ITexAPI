@@ -3,6 +3,7 @@ using ITexAPI.Models.Entities;
 using ITexAPI.Services.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace ITexAPI.Services.Implementations
 {
@@ -27,7 +28,7 @@ namespace ITexAPI.Services.Implementations
 
         public async Task<IEnumerable<UserDto>> GetAllAsync()
         {
-            var users = _userManager.Users.ToList();
+            var users = await _userManager.Users.ToListAsync();
             return _mapper.Map<IEnumerable<UserDto>>(users);
         }
 

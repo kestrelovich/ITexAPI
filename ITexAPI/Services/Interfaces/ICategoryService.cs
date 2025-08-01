@@ -1,15 +1,14 @@
 ﻿using ITexAPI.Models.DTOs;
-using ITexAPI.Models.DTOs.Common;
 
 namespace ITexAPI.Services.Interfaces
 {
     public interface ICategoryService
     {
-        Task<ApiResponse<IEnumerable<CategoryDto>>> GetAllCategoriesAsync();
-        Task<ApiResponse<CategoryDto>> GetCategoryByIdAsync(int id);
-        Task<ApiResponse<CategoryDto>> CreateCategoryAsync(CreateCategoryDto createCategoryDto);
-        Task<ApiResponse<CategoryDto>> UpdateCategoryAsync(int id, UpdateCategoryDto updateCategoryDto);
-        Task<ApiResponse<bool>> DeleteCategoryAsync(int id);
-        Task<ApiResponse<IEnumerable<CategoryDto>>> GetCategoriesByParentAsync(int? parentId);
+        Task<IEnumerable<CategoryDto>> GetAllAsync();
+        Task<CategoryDto> GetByIdAsync(int id);
+        Task<CategoryDto> CreateAsync(CreateCategoryDto createCategoryDto);
+        Task<CategoryDto> UpdateAsync(int id, UpdateCategoryDto updateCategoryDto);
+        Task DeleteAsync(int id);
+        Task<IEnumerable<CategoryDto>> GetByParentAsync(int? parentId);
     }
 }

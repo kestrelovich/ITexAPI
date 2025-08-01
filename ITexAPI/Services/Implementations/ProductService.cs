@@ -1,4 +1,5 @@
 ﻿using ITexAPI.Data.Repositories.Interfaces;
+using ITexAPI.Exceptions;
 using ITexAPI.Models.DTOs;
 using ITexAPI.Models.DTOs.Common;
 using ITexAPI.Models.Entities;
@@ -21,7 +22,7 @@ namespace ITexAPI.Services.Implementations
         public async Task<ProductDto> GetByIdAsync(int id)
         {
             var product = await _productRepo.GetProductWithImagesAsync(id);
-            if (product == null) throw new Exception("Product not found");
+            if (product == null) throw new NotFoundException("Product", id);
             return _mapper.Map<ProductDto>(product);
         }
 
@@ -48,6 +49,11 @@ namespace ITexAPI.Services.Implementations
 
         public async Task<ProductDto> CreateAsync(CreateProductDto dto)
         {
+            // Check SKU uniqueness
+            var isSkuUnique = await _productRepo.IsSkuUniqueAsync(dto.SKU);
+            if (!isSkuUnique)
+                throw new DuplicateException($"A product with SKU '{dto.SKU}' already exists.");
+
             var entity = _mapper.Map<Product>(dto);
             var created = await _productRepo.AddAsync(entity);
             return _mapper.Map<ProductDto>(created);
@@ -56,14 +62,19 @@ namespace ITexAPI.Services.Implementations
         public async Task<ProductDto> UpdateAsync(int id, UpdateProductDto dto)
         {
             var existing = await _productRepo.GetByIdAsync(id);
-            if (existing == null) throw new Exception("Product not found");
+            if (existing == null) throw new NotFoundException("Product", id);
+
             _mapper.Map(dto, existing);
+            existing.UpdatedAt = DateTime.UtcNow;
             var updated = await _productRepo.UpdateAsync(existing);
             return _mapper.Map<ProductDto>(updated);
         }
 
         public async Task DeleteAsync(int id)
         {
+            var existing = await _productRepo.GetByIdAsync(id);
+            if (existing == null) throw new NotFoundException("Product", id);
+
             await _productRepo.DeleteAsync(id);
         }
     }

@@ -10,6 +10,7 @@ namespace ITexAPI.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             // Services
+            services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IOrderService, OrderService>();

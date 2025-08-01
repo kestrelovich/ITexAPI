@@ -1,14 +1,24 @@
 using FluentValidation;
 using ITexAPI.Data;
 using ITexAPI.Extensions;
+using ITexAPI.Middlewares;
 using ITexAPI.Models.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -21,19 +31,24 @@ builder.Services.AddApplicationServices();
 // Identity
 builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 {
-    options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireDigit = true;
     options.User.RequireUniqueEmail = true;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
+var jwtKey = jwtSettings["Key"];
+if (string.IsNullOrEmpty(jwtKey))
+    throw new InvalidOperationException("JWT Key is not configured. Please set the Jwt:Key in your configuration.");
+var key = Encoding.ASCII.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -64,9 +79,12 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularApp", builder =>
+    options.AddPolicy("AllowFrontendApp", builder =>
     {
-        builder.WithOrigins("http://localhost:4200")
+        builder.WithOrigins(
+                "http://localhost:4200", "http://localhost:4321", "http://localhost:4322", "http://localhost:3000",
+                "https://localhost:4200", "https://localhost:4321", "https://localhost:4322", "https://localhost:3000"
+            )
                .AllowAnyMethod()
                .AllowAnyHeader()
                .AllowCredentials();
@@ -116,18 +134,35 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAngularApp");
+// Serve static files from frontend public folder
+var frontendPublicPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "ITex-Frontend", "ITex-Frontend", "public");
+if (Directory.Exists(frontendPublicPath))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(frontendPublicPath),
+        RequestPath = ""
+    });
+}
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<ValidationMiddleware>();
+
+app.UseCors("AllowFrontendApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure database is created
+// Ensure database is created and seeded
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+
     context.Database.EnsureCreated();
+    await SeedData.SeedAsync(context, userManager);
 }
 
 app.Run();

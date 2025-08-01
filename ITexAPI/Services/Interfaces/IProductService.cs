@@ -5,12 +5,11 @@ namespace ITexAPI.Services.Interfaces
 {
     public interface IProductService
     {
-        Task<ApiResponse<PaginatedResponse<ProductSummaryDto>>> GetProductsAsync(PaginationParams paginationParams, int? categoryId = null);
-        Task<ApiResponse<ProductDto>> GetProductByIdAsync(int id);
-        Task<ApiResponse<ProductDto>> GetProductBySKUAsync(string sku);
-        Task<ApiResponse<ProductDto>> CreateProductAsync(CreateProductDto createProductDto);
-        Task<ApiResponse<ProductDto>> UpdateProductAsync(int id, UpdateProductDto updateProductDto);
-        Task<ApiResponse<bool>> DeleteProductAsync(int id);
-        Task<ApiResponse<bool>> UpdateStockAsync(int productId, int newStock);
+        Task<ProductDto> GetByIdAsync(int id);
+        Task<IEnumerable<ProductSummaryDto>> GetAllAsync();
+        Task<PaginatedResponse<ProductSummaryDto>> GetPaginatedAsync(PaginationParams paginationParams);
+        Task<ProductDto> CreateAsync(CreateProductDto dto);
+        Task<ProductDto> UpdateAsync(int id, UpdateProductDto dto);
+        Task DeleteAsync(int id);
     }
 }
