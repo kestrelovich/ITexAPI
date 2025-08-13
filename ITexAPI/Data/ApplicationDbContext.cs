@@ -80,6 +80,12 @@ namespace ITexAPI.Data
                 entity.Property(e => e.TotalAmount).HasPrecision(18, 2);
                 entity.Property(e => e.ShippingAddress).IsRequired().HasMaxLength(500);
 
+                // Customer Information fields
+                entity.Property(e => e.CustomerFirstName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.CustomerLastName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.CustomerEmail).IsRequired().HasMaxLength(256);
+                entity.Property(e => e.CustomerPhone).IsRequired().HasMaxLength(50);
+
                 entity.HasOne(e => e.User)
                     .WithMany(e => e.Orders)
                     .HasForeignKey(e => e.UserId)
@@ -87,6 +93,7 @@ namespace ITexAPI.Data
 
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.OrderDate);
+                entity.HasIndex(e => e.CustomerEmail);
             });
 
             // OrderItem configuration

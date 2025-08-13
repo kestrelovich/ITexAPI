@@ -32,6 +32,14 @@ namespace ITexAPI.Controllers
             return Ok(ApiResponse<IEnumerable<ProductSummaryDto>>.SuccessResponse(products));
         }
 
+        [HttpGet("category/{categoryId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<IEnumerable<ProductSummaryDto>>>> GetByCategory(int categoryId)
+        {
+            var products = await _productService.GetByCategoryAsync(categoryId);
+            return Ok(ApiResponse<IEnumerable<ProductSummaryDto>>.SuccessResponse(products));
+        }
+
         [HttpGet("paginated")]
         [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<PaginatedResponse<ProductSummaryDto>>>> GetPaginated([FromQuery] PaginationParams paginationParams)

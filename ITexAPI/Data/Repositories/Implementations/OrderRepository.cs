@@ -79,7 +79,7 @@ namespace ITexAPI.Data.Repositories.Implementations
 
             return new PaginatedResponse<Order>
             {
-                Data = items,
+                Items = items,
                 TotalCount = totalCount,
                 PageNumber = paginationParams.PageNumber,
                 PageSize = paginationParams.PageSize,

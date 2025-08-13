@@ -64,7 +64,8 @@ namespace ITexAPI.Middlewares
 
                 default:
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
-                    response = ApiResponse<object>.ErrorResponse("An internal server error occurred.");
+                    // Include actual error details for debugging
+                    response = ApiResponse<object>.ErrorResponse($"An internal server error occurred: {exception.Message}. Type: {exception.GetType().Name}");
                     break;
             }
 

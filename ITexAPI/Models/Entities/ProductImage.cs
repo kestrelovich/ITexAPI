@@ -1,4 +1,6 @@
-﻿namespace ITexAPI.Models.Entities
+﻿using System.Text.Json.Serialization;
+
+namespace ITexAPI.Models.Entities
 {
     public class ProductImage
     {
@@ -7,10 +9,14 @@
         public string ImageUrl { get; set; } = string.Empty;
         public string? AltText { get; set; }
         public bool IsMain { get; set; } = false;
-        public int DisplayOrder { get; set; } = 0;
+
+        // Keep this consistent with your AddImageUrlDto Range(1, ...)
+        public int DisplayOrder { get; set; } = 1;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navigation properties
+        // Prevent Product -> Images -> Product -> ... cycles if entities get serialized
+        [JsonIgnore]
         public virtual Product Product { get; set; } = null!;
     }
 }

@@ -32,12 +32,26 @@ namespace ITexAPI.Services.Implementations
             return _mapper.Map<IEnumerable<ProductSummaryDto>>(products);
         }
 
+        public async Task<IEnumerable<ProductSummaryDto>> GetByCategoryAsync(int categoryId)
+        {
+            var products = await _productRepo.GetProductsByCategoryAsync(categoryId);
+            return _mapper.Map<IEnumerable<ProductSummaryDto>>(products);
+        }
+
         public async Task<PaginatedResponse<ProductSummaryDto>> GetPaginatedAsync(PaginationParams paginationParams)
         {
-            var paged = await _productRepo.GetProductsWithFiltersAsync(paginationParams);
+            var paged = await _productRepo.GetProductsWithFiltersAsync(
+                paginationParams,
+                paginationParams.CategoryId,
+                paginationParams.MinPrice,
+                paginationParams.MaxPrice,
+                paginationParams.FabricType,
+                paginationParams.Color,
+                paginationParams.Size
+            );
             return new PaginatedResponse<ProductSummaryDto>
             {
-                Data = _mapper.Map<List<ProductSummaryDto>>(paged.Data),
+                Items = _mapper.Map<List<ProductSummaryDto>>(paged.Items),
                 TotalCount = paged.TotalCount,
                 PageNumber = paged.PageNumber,
                 PageSize = paged.PageSize,

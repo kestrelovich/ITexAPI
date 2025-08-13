@@ -76,18 +76,26 @@ builder.Services.AddAutoMapper(typeof(Program));
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// CORS
+// CORS - Updated for proper frontend communication
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontendApp", builder =>
+    options.AddPolicy("AllowFrontend", builder =>
     {
-        builder.WithOrigins(
-                "http://localhost:4200", "http://localhost:4321", "http://localhost:4322", "http://localhost:3000",
-                "https://localhost:4200", "https://localhost:4321", "https://localhost:4322", "https://localhost:3000"
+        builder
+            .WithOrigins(
+                "http://localhost:4322",  // Astro dev server (primary)
+                "http://localhost:4321",  // Alternative Astro port
+                "http://localhost:3000",  // React dev server
+                "http://localhost:4200",  // Angular dev server
+                "https://localhost:4322", // HTTPS variants
+                "https://localhost:4321",
+                "https://localhost:3000",
+                "https://localhost:4200"
             )
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials();
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
     });
 });
 
@@ -148,7 +156,8 @@ if (Directory.Exists(frontendPublicPath))
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<ValidationMiddleware>();
 
-app.UseCors("AllowFrontendApp");
+// CORS - Must be before Authentication/Authorization
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

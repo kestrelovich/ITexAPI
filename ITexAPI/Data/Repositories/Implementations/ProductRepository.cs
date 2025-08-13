@@ -11,6 +11,16 @@ namespace ITexAPI.Data.Repositories.Implementations
         {
         }
 
+        public override async Task<IEnumerable<Product>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(p => p.Images)
+                .Include(p => p.Category)
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+        }
+
         public async Task<Product?> GetProductWithImagesAsync(int id)
         {
             return await _dbSet
@@ -22,7 +32,7 @@ namespace ITexAPI.Data.Repositories.Implementations
         public async Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId)
         {
             return await _dbSet
-                .Include(p => p.Images.Where(img => img.IsMain))
+                .Include(p => p.Images)
                 .Include(p => p.Category)
                 .Where(p => p.CategoryId == categoryId && p.IsActive)
                 .OrderBy(p => p.Name)
@@ -34,7 +44,7 @@ namespace ITexAPI.Data.Repositories.Implementations
             string? fabricType = null, string? color = null, string? size = null)
         {
             var query = _dbSet
-                .Include(p => p.Images.Where(img => img.IsMain))
+                .Include(p => p.Images)
                 .Include(p => p.Category)
                 .Where(p => p.IsActive);
 
@@ -83,7 +93,7 @@ namespace ITexAPI.Data.Repositories.Implementations
 
             return new PaginatedResponse<Product>
             {
-                Data = items,
+                Items = items,
                 TotalCount = totalCount,
                 PageNumber = paginationParams.PageNumber,
                 PageSize = paginationParams.PageSize,

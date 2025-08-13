@@ -7,6 +7,7 @@ namespace ITexAPI.Services.Interfaces
     {
         Task<ProductDto> GetByIdAsync(int id);
         Task<IEnumerable<ProductSummaryDto>> GetAllAsync();
+        Task<IEnumerable<ProductSummaryDto>> GetByCategoryAsync(int categoryId);
         Task<PaginatedResponse<ProductSummaryDto>> GetPaginatedAsync(PaginationParams paginationParams);
         Task<ProductDto> CreateAsync(CreateProductDto dto);
         Task<ProductDto> UpdateAsync(int id, UpdateProductDto dto);

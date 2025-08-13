@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ITexAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialMigrationWithCustomerInfo : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -228,14 +228,18 @@ namespace ITexAPI.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: true),
                     OrderDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false),
                     Status = table.Column<int>(type: "INTEGER", nullable: false),
                     ShippingAddress = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     Notes = table.Column<string>(type: "TEXT", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CustomerFirstName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    CustomerLastName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    CustomerEmail = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    CustomerPhone = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -375,6 +379,11 @@ namespace ITexAPI.Migrations
                 name: "IX_OrderItems_ProductId",
                 table: "OrderItems",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_CustomerEmail",
+                table: "Orders",
+                column: "CustomerEmail");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_OrderDate",

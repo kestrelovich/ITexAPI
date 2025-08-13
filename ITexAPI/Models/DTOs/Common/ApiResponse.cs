@@ -30,7 +30,7 @@
 
     public class PaginatedResponse<T>
     {
-        public List<T> Data { get; set; } = new();
+        public List<T> Items { get; set; } = new();
         public int TotalCount { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
@@ -46,5 +46,11 @@
         public string? SearchTerm { get; set; }
         public string? SortBy { get; set; }
         public string? SortOrder { get; set; } = "asc";
+        public int? CategoryId { get; set; }
+        public decimal? MinPrice { get; set; }
+        public decimal? MaxPrice { get; set; }
+        public string? FabricType { get; set; }
+        public string? Color { get; set; }
+        public string? Size { get; set; }
     }
 }

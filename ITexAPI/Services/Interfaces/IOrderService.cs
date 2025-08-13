@@ -10,5 +10,6 @@ namespace ITexAPI.Services.Interfaces
         Task<PaginatedResponse<OrderSummaryDto>> GetPaginatedAsync(PaginationParams paginationParams);
         Task<OrderDto> CreateAsync(int? userId, CreateOrderDto dto);
         Task CancelAsync(int id);
+        Task UpdateStatusAsync(int id, string status);
     }
 }

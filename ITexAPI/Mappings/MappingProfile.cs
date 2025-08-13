@@ -66,7 +66,8 @@ namespace ITexAPI.Mappings
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
 
-            CreateMap<ProductImage, ProductImageDto>();
+            CreateMap<ProductImage, ProductImageDto>()
+                .ForMember(dest => dest.IsPrimary, opt => opt.MapFrom(src => src.IsMain));
         }
 
         private void CreateOrderMappings()
@@ -93,8 +94,8 @@ namespace ITexAPI.Mappings
             CreateMap<CreateOrderItemDto, OrderItem>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.OrderId, opt => opt.Ignore())
-                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore()) // Set from product price
-                .ForMember(dest => dest.TotalPrice, opt => opt.Ignore()); // Calculate from quantity * unit price
+                .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.UnitPrice)) // Use validated frontend price
+                .ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.Quantity * src.UnitPrice)); // Calculate from frontend data
         }
 
         private void CreateShoppingCartMappings()

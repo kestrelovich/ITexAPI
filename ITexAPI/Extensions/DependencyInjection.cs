@@ -9,6 +9,9 @@ namespace ITexAPI.Extensions
     {
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
+            // Add HttpClientFactory for proper HttpClient management
+            services.AddHttpClient();
+
             // Services
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IProductService, ProductService>();
@@ -16,6 +19,7 @@ namespace ITexAPI.Extensions
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<IShoppingCartService, ShoppingCartService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IEmailService, BrevoEmailService>();
 
             // Repositories
             services.AddScoped<IProductRepository, ProductRepository>();

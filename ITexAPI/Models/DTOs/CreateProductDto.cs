@@ -8,6 +8,7 @@
         public decimal Price { get; set; }
         public int StockQuantity { get; set; }
         public int CategoryId { get; set; }
+        public bool IsActive { get; set; } = true;
 
         // Textile-specific properties
         public string? FabricType { get; set; }
