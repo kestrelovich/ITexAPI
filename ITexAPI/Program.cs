@@ -12,6 +12,9 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Expand environment variables in configuration
+builder.Configuration.AddEnvironmentVariables();
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -23,9 +26,34 @@ builder.Host.UseSerilog();
 // Add services to the container.
 builder.Services.AddControllers();
 
-// Database
+// Database connection with environment variable override support
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Override with environment variables ONLY if all required variables are provided
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+// Only override if we have all the essential pieces (at minimum password or complete set)
+if (!string.IsNullOrEmpty(dbPassword) &&
+    (!string.IsNullOrEmpty(dbHost) || !string.IsNullOrEmpty(dbName) || !string.IsNullOrEmpty(dbUser)))
+{
+    // Build connection string from environment variables
+    connectionString = $"Host={dbHost ?? "localhost"};Database={dbName ?? "itex_development"};Username={dbUser ?? "itex_user"};Password={dbPassword}";
+}
+
+if (string.IsNullOrEmpty(connectionString))
+    throw new InvalidOperationException("Database connection string is not configured.");
+
+// Debug: Log the connection string (without password for security)
+var debugConnectionString = connectionString.Contains("Password=")
+    ? connectionString.Substring(0, connectionString.IndexOf("Password=") + 9) + "***"
+    : connectionString;
+Console.WriteLine($"Using connection string: {debugConnectionString}");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 builder.Services.AddApplicationServices();
 
 // Identity
@@ -43,11 +71,13 @@ builder.Services.AddIdentity<User, IdentityRole<int>>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// JWT Authentication
+// JWT Authentication with environment variable support
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSettings["Key"];
+var jwtKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? jwtSettings["Key"];
+
 if (string.IsNullOrEmpty(jwtKey))
-    throw new InvalidOperationException("JWT Key is not configured. Please set the Jwt:Key in your configuration.");
+    throw new InvalidOperationException("JWT Key is not configured. Please set the JWT_SECRET_KEY environment variable or configure Jwt:Key in appsettings.json.");
+
 var key = Encoding.ASCII.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
@@ -76,26 +106,42 @@ builder.Services.AddAutoMapper(typeof(Program));
 // FluentValidation
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-// CORS - Updated for proper frontend communication
+// CORS
+// HSTS configuration for production
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHsts(options =>
+    {
+        options.Preload = true;
+        options.IncludeSubDomains = true;
+        options.MaxAge = TimeSpan.FromDays(365);
+    });
+}
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", builder =>
+    options.AddPolicy("AllowFrontendApp", policy =>
     {
-        builder
-            .WithOrigins(
-                "http://localhost:4322",  // Astro dev server (primary)
-                "http://localhost:4321",  // Alternative Astro port
-                "http://localhost:3000",  // React dev server
-                "http://localhost:4200",  // Angular dev server
-                "https://localhost:4322", // HTTPS variants
-                "https://localhost:4321",
-                "https://localhost:3000",
-                "https://localhost:4200"
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials()
-            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.WithOrigins(
+                    "http://localhost:4200", "http://localhost:4321", "http://localhost:4322", "http://localhost:3000",
+                    "https://localhost:4200", "https://localhost:4321", "https://localhost:4322", "https://localhost:3000"
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
+        }
+        else
+        {
+            // Production CORS - restrict to actual domain
+            policy.WithOrigins("https://yourdomain.com", "https://www.yourdomain.com")
+                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .WithHeaders("Content-Type", "Authorization", "Accept", "X-Requested-With")
+                .AllowCredentials()
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
+        }
     });
 });
 
@@ -139,6 +185,20 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // Production security headers
+    app.UseHsts();
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Add("X-Frame-Options", "DENY");
+        context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+        context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+        context.Response.Headers.Add("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;");
+        await next();
+    });
+}
 
 app.UseHttpsRedirection();
 
@@ -156,21 +216,21 @@ if (Directory.Exists(frontendPublicPath))
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<ValidationMiddleware>();
 
-// CORS - Must be before Authentication/Authorization
-app.UseCors("AllowFrontend");
+app.UseCors("AllowFrontendApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Ensure database is created and seeded
+// Apply pending migrations and seed data
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
-    context.Database.EnsureCreated();
+    // Apply any pending migrations
+    context.Database.Migrate();
     await SeedData.SeedAsync(context, userManager);
 }
 

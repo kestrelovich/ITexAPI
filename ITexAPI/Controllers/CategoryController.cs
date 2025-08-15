@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using ITexAPI.Models.DTOs;
+using ITexAPI.Models.DTOs.Common;
 using ITexAPI.Services.Interfaces;
 
 namespace ITexAPI.Controllers
@@ -15,29 +17,51 @@ namespace ITexAPI.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<CategoryDto>> Get(int id)
-            => Ok(await _categoryService.GetByIdAsync(id));
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> Get(int id)
+        {
+            var category = await _categoryService.GetByIdAsync(id);
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(category));
+        }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll()
-            => Ok(await _categoryService.GetAllAsync());
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<IEnumerable<CategoryDto>>>> GetAll()
+        {
+            var categories = await _categoryService.GetAllAsync();
+            return Ok(ApiResponse<IEnumerable<CategoryDto>>.SuccessResponse(categories));
+        }
 
         [HttpPost]
-        public async Task<ActionResult<CategoryDto>> Create([FromBody] CreateCategoryDto dto)
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> Create([FromBody] CreateCategoryDto dto)
         {
             var category = await _categoryService.CreateAsync(dto);
-            return CreatedAtAction(nameof(Get), new { id = category.Id }, category);
+            return CreatedAtAction(nameof(Get), new { id = category.Id }, ApiResponse<CategoryDto>.SuccessResponse(category));
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult<CategoryDto>> Update(int id, [FromBody] UpdateCategoryDto dto)
-            => Ok(await _categoryService.UpdateAsync(id, dto));
+        [Authorize]
+        public async Task<ActionResult<ApiResponse<CategoryDto>>> Update(int id, [FromBody] UpdateCategoryDto dto)
+        {
+            var category = await _categoryService.UpdateAsync(id, dto);
+            return Ok(ApiResponse<CategoryDto>.SuccessResponse(category));
+        }
 
         [HttpDelete("{id}")]
+        [Authorize]
         public async Task<ActionResult> Delete(int id)
         {
             await _categoryService.DeleteAsync(id);
             return NoContent();
+        }
+
+        [HttpGet("by-parent")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<IEnumerable<CategoryDto>>>> GetByParent([FromQuery] int? parentId = null)
+        {
+            var categories = await _categoryService.GetByParentAsync(parentId);
+            return Ok(ApiResponse<IEnumerable<CategoryDto>>.SuccessResponse(categories));
         }
     }
 }
